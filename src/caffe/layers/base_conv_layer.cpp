@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <sys/time.h>
 
 #include "caffe/filler.hpp"
 #include "caffe/layers/base_conv_layer.hpp"
@@ -41,7 +42,7 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
         kernel_shape_data[i] =
             conv_param.kernel_size((num_kernel_dims == 1) ? 0 : i);
       }
-  }
+}
   for (int i = 0; i < num_spatial_axes_; ++i) {
     CHECK_GT(kernel_shape_data[i], 0) << "Filter dimensions must be nonzero.";
   }
@@ -319,12 +320,11 @@ void BaseConvolutionLayer<Dtype>::backward_cpu_bias(Dtype* bias,
   caffe_cpu_gemv<Dtype>(CblasNoTrans, num_output_, out_spatial_dim_, 1.,
       input, bias_multiplier_.cpu_data(), 1., bias);
 }
-
 #ifndef CPU_ONLY
 
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::forward_gpu_gemm(const Dtype* input,
-    const Dtype* weights, Dtype* output, bool skip_im2col) {
+    const Dtype* weights, Dtype* output, bool skip_im2col, const Dtype* weightc) {
   const Dtype* col_buff = input;
   if (!is_1x1_) {
     if (!skip_im2col) {
@@ -332,12 +332,12 @@ void BaseConvolutionLayer<Dtype>::forward_gpu_gemm(const Dtype* input,
     }
     col_buff = col_buffer_.gpu_data();
   }
-  for (int g = 0; g < group_; ++g) {
-    caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, conv_out_channels_ /
-        group_, conv_out_spatial_dim_, kernel_dim_,
-        (Dtype)1., weights + weight_offset_ * g, col_buff + col_offset_ * g,
-        (Dtype)0., output + output_offset_ * g);
-  }
+    for (int g = 0; g < group_; ++g) {
+      caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, conv_out_channels_ /
+                                                        group_, conv_out_spatial_dim_, kernel_dim_,
+                            (Dtype)1., weights + weight_offset_ * g, col_buff + col_offset_ * g,
+                            (Dtype)0., output + output_offset_ * g);
+    }
 }
 
 template <typename Dtype>
@@ -350,7 +350,7 @@ void BaseConvolutionLayer<Dtype>::forward_gpu_bias(Dtype* output,
 
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::backward_gpu_gemm(const Dtype* output,
-    const Dtype* weights, Dtype* input) {
+    const Dtype* weights, Dtype* input, const Dtype* weightc) {
   Dtype* col_buff = col_buffer_.mutable_gpu_data();
   if (is_1x1_) {
     col_buff = input;

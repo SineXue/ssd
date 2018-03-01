@@ -4,11 +4,11 @@
 set -e
 
 EXAMPLE=examples/imagenet
-DATA=data/ilsvrc12
+DATA=/mnt/disk2/imagenet2015/ILSVRC2015/ImageSets/CLS-LOC
 TOOLS=build/tools
 
-TRAIN_DATA_ROOT=/path/to/imagenet/train/
-VAL_DATA_ROOT=/path/to/imagenet/val/
+TRAIN_DATA_ROOT=/mnt/disk2/imagenet2015/ILSVRC2015/Data/CLS-LOC/train/
+VAL_DATA_ROOT=/mnt/disk2/imagenet2015/ILSVRC2015/Data/CLS-LOC/val/
 
 # Set RESIZE=true to resize the images to 256x256. Leave as false if images have
 # already been resized using another tool.
